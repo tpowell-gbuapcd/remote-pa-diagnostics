@@ -58,37 +58,72 @@ def plot_data(file_name, frame):
     input type: pandas dataframe
     '''
 
-    props = dict(boxstyle='round', facecoler='wheat', alpha=0.4)
+    prop = dict(boxstyle='round', facecolor='wheat', alpha=0.4)
     fig, ax = plt.subplots(2, sharex=True, figsize=(10,10))
-
     frame = frame.sort_values('Time', ascending=True)
+
+
+    avg_pa_current = frame['PA Current'].mean(axis=0)
+    avg_wifi_current = frame['WIFI Current'].mean(axis=0)
+    avg_rpi_current = frame['RPi Current'].mean(axis=0)
+    avg_comms_current = frame['Comms Current'].mean(axis=0)
+
+    total_current = frame['PA Current'] + frame['WIFI Current'] + frame['RPi Current'] + frame['Comms Current']
+    avg_total_current = total_current.mean(axis=0)    
+ 
+    avg_pa_power = frame['PA Power'].mean(axis=0)
+    avg_wifi_power = frame['WIFI Power'].mean(axis=0)
+    avg_rpi_power = frame['RPi Power'].mean(axis=0)
+    avg_comms_power = frame['Comms Power'].mean(axis=0)
+    
+    total_power = frame['PA Power'] + frame['WIFI Power'] + frame['RPi Power'] + frame['Comms Power']
+    avg_total_power = total_power.mean(axis=0)    
+
     ax[0].plot(frame['Time'], frame['PA Current'], label='Purple Air', c='m')
     ax[0].plot(frame['Time'], frame['WIFI Current'], label='Wifi', c='b')
     ax[0].plot(frame['Time'], frame['RPi Current'], label='Raspberry Pi', c='r')
     ax[0].plot(frame['Time'], frame['Comms Current'], label='Communication', c='g')
+    ax[0].plot(frame['Time'], total_current, label='Total Current', c='y')
     
-    ax[0].set_ylim(0.0, 400)
+    ax[0].set_ylim(0.0, 1000)
     ax[0].set_xlabel('Time')
     ax[0].set_ylabel('Current (mA)')
     ax[0].grid(True)
     ax[0].set_title('Remote PurpleAir Current and Power Diagnostics') #eventually have the code differentiate between different units    
     ax[0].legend(loc='upper left')
     ax[0].xaxis.set_major_locator(plt.MaxNLocator(5))
+    ax[0].text(0.75, 0.74, 'Avg PA: {:.2f}mA\nAvg WiFi: {:.2f}ma\nAvg RPi: {:.2f}mA\nAvg Comms: {:.2f}mA\nAvg Total: {:.2f}mA'.format(avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_total_current),
+                transform=ax[0].transAxes, bbox=prop)
 
     ax[1].plot(frame['Time'], frame['PA Power'], label='Purple Air', c='m')
-    ax[1].plot(frame['Time'], frame['WIFI Power'], label='WIFI', c='b')
+    ax[1].plot(frame['Time'], frame['WIFI Power'], label='Wifi', c='b')
     ax[1].plot(frame['Time'], frame['RPi Power'], label='Raspberry Pi', c='r')
-    ax[1].plot(frame['Time'], frame['Comms Power'], label='Communcation', c='g')    
+    ax[1].plot(frame['Time'], frame['Comms Power'], label='Communication', c='g')
+    ax[1].plot(frame['Time'], total_power, label='Total Power', c='y')
     
-    ax[1].set_ylim(0.0, 5)
+    ax[1].set_ylim(0.0, 12)
     ax[1].set_ylabel('Power (W)')
     ax[1].grid(True)
     ax[1].legend(loc='upper left')
     ax[1].xaxis.set_major_locator(plt.MaxNLocator(5))
-    
+    ax[1].text(0.75, 0.75, 'Avg PA: {:.2f}W\nAvg WiFi: {:.2f}W\nAvg RPi: {:.2f}W\nAvg Comms: {:.2f}W\nAvg Total: {:.2f}W'.format(avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, avg_total_power),
+                transform=ax[1].transAxes, bbox=prop)
+
+    '''
+    ax[2].plot(frame['Time'], frame['PA Voltage'], label='Purple Air', c='m')
+    ax[2].plot(frame['Time'], frame['WIFI Voltage'], label='WIFI', c='b')
+    ax[2].plot(frame['Time'], frame['RPi Voltage'], label='Raspberry Pi', c='r')
+    ax[2].plot(frame['Time'], frame['Comms Voltage'], label='Communication', c='g')
+
+    ax[2].set_ylim(0, 16)
+    ax[2].set_ylabel('Voltage (V)')
+    ax[2].grid(True)
+    ax[2].legend(loc='upper right')
+    ax[2].xaxis.set_major_locator(plt.MaxNLocator(5))
+    '''
     plt.xticks(rotation=45)
     plt.savefig(os.getcwd() + '/plots/cellular/' + file_name[:-4] + '.png', bbox_inches='tight', dpi=300)    
-
+    plt.close()
 
 def plot_list(src_dir):
     '''
@@ -102,15 +137,16 @@ def plot_list(src_dir):
                 plot_file = f[:-4] + '.png'
                 #print(f, plot_file)
                 if plot_file not in os.listdir(plot_dir):
-                    print(plot_file, os.listdir(plot_dir))
+                    #print(plot_file, os.listdir(plot_dir))
                     print("Plotting data from {} as {}".format(f, plot_file))
                     frame = reader(src_dir + f)
                     plot_data(f, frame)
                 else:
                     print("All data files plotted.")
-        except:
-            print("Sleeping 60 seconds")
-            time.sleep(60)
+        except Exception as e:
+            print(e)
+            print("Sleeping 120 seconds")
+            time.sleep(120)
 
 
 if __name__ == "__main__":
