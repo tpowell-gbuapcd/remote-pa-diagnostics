@@ -109,28 +109,96 @@ def plot_data(file_name, frame):
     ax[1].text(0.75, 0.75, 'Avg PA: {:.2f}W\nAvg WiFi: {:.2f}W\nAvg RPi: {:.2f}W\nAvg Comms: {:.2f}W\nAvg Total: {:.2f}W'.format(avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, avg_total_power),
                 transform=ax[1].transAxes, bbox=prop)
 
-    '''
-    ax[2].plot(frame['Time'], frame['PA Voltage'], label='Purple Air', c='m')
-    ax[2].plot(frame['Time'], frame['WIFI Voltage'], label='WIFI', c='b')
-    ax[2].plot(frame['Time'], frame['RPi Voltage'], label='Raspberry Pi', c='r')
-    ax[2].plot(frame['Time'], frame['Comms Voltage'], label='Communication', c='g')
-
-    ax[2].set_ylim(0, 16)
-    ax[2].set_ylabel('Voltage (V)')
-    ax[2].grid(True)
-    ax[2].legend(loc='upper right')
-    ax[2].xaxis.set_major_locator(plt.MaxNLocator(5))
-    '''
     plt.xticks(rotation=45)
     plt.savefig(os.getcwd() + '/plots/cellular/' + file_name[:-4] + '.png', bbox_inches='tight', dpi=300)    
     plt.close()
 
-def plot_list(src_dir):
+
+def write_averages(file_dir, frame):
     '''
-    Make a list of data files that still need to be plotted
+    Write the ten minute averages of the csv data to a a csv and a human readable text file. Can be used later 
+    for plotting or further data analysis. 
+
+    input param: frame, the dataframe of the csv file. 
+    input type: pandas dataframe
     '''
-    plot_dir = os.getcwd() + '/plots/cellular/'
+
+    avg_pa_current = frame['PA Current'].mean(axis=0)
+    avg_wifi_current = frame['WIFI Current'].mean(axis=0)
+    avg_rpi_current = frame['RPi Current'].mean(axis=0)
+    avg_comms_current = frame['Comms Current'].mean(axis=0)
+
+    avg_pa_power = frame['PA Power'].mean(axis=0)
+    avg_wifi_power = frame['WIFI Power'].mean(axis=0)
+    avg_rpi_power = frame['RPi Power'].mean(axis=0)
+    avg_comms_power = frame['Comms Power'].mean(axis=0)
+
+    avg_pa_voltage = frame['PA Voltage'].mean(axis=0)
+    avg_wifi_voltage = frame['WIFI Voltage'].mean(axis=0)
+    avg_rpi_voltage = frame['RPi Voltage'].mean(axis=0)
+    avg_comms_voltage = frame['Comms Voltage'].mean(axis=0)
+
+    total_current = frame['PA Current'] + frame['WIFI Current'] + frame['RPi Current'] + frame['Comms Current']
+    total_power = frame['PA Power'] + frame['WIFI Power'] + frame['RPi Power'] + frame['Comms Power']
+    avg_total_current = total_current.mean(axis=0)
+    avg_total_power = total_power.mean(axis=0)
+
+    header_vals = ['Time', 'PA Current', 'WIFI Current', 'RPi Current', 'Comms Current', 'PA Power', 'WIFI Power', 'RPi Power', 'Comms Power', 'PA Voltage', 'WIFI Voltage', 'RPi Voltage', 'Comms Voltage', 'Total Current', 'Total Power']
+    row = [datetime.now().strftime('%m/%d/%Y %H:%M:%S'), avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, 
+            avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage, avg_total_current, avg_total_power]
+
+    csv_file = 'cellular_average_data.csv'
+    txt_file = 'cellular_average_data.txt'
+
+    try:
+        if csv_file not in os.listdir(file_dir):
+            # if the file does not exist, create it and write the header row for and the first row
+            with open(file_dir+csv_file, 'w') as f:
+                print('Writing CSV header')
+                file_writer = csv.writer(f, delimiter=',')
+                file_writer.writerow(header_vals)
+                file_writer.writerow(row)
+                f.close()
+            with open(file_dir+txt_file, 'w') as txt:
+                print('Writing Text Header')
+                txt.write('{:<25}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}\n'.format('Time', 'PA Current', 'WIFI Current', 'RPi Current', 'Comms Current',
+                            'PA Power', 'WIFI Power', 'RPi Power', 'Comms Power', 'PA Voltage', 'WIFI Voltage', 'RPi Voltage', 'Comms Voltage', 'Total Current', 'Total Power'))
+                txt.write('{:<25}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}\n'.format(datetime.now().strftime('%m/%d/%Y %H:%M:%S'), 
+                            avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage,
+                                avg_total_current, avg_total_power))
+
+                txt.close()
+        else:
+            with open(file_dir+csv_file, 'a') as f:
+                print('Appending to CSV')
+                file_writer = csv.writer(f, delimiter=',')
+                file_writer.writerow(row)
+                f.close()
+            with open(file_dir+txt_file, 'a') as txt:
+                print('Appending to Text')
+                txt.write('{:<25}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}\n'.format(datetime.now().strftime('%m/%d/%Y %H:%M:%S'), 
+                            avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage,
+                                avg_total_current, avg_total_power))
+                txt.close()
+    except Exception as e:
+        print('Womp womp')
+        print(e)
     
+
+def create_diagnostics(src_dir):
+    '''
+    Check to see what csv files already have been plotted, make plots if they haven't. 
+    Append average values to a csv. Sometimes the rsync starts before data have been fully
+    inserted into file, which gives us incomplete data and an error. If this happens, we wait
+    5 minutes at (twice at most) to give the program time to completely fill the csv with data. 
+    
+    input param: src_dir, source directory of csv files
+    input type: string
+    '''
+
+    plot_dir = os.getcwd() + '/plots/cellular/'
+    avg_file_dir = os.getcwd() + '/data/'    
+
     for x in range(0, 2): #try 2 times  
         try: 
             for f in os.listdir(src_dir):
@@ -139,18 +207,19 @@ def plot_list(src_dir):
                 if plot_file not in os.listdir(plot_dir):
                     #print(plot_file, os.listdir(plot_dir))
                     print("Plotting data from {} as {}".format(f, plot_file))
-                    frame = reader(src_dir + f)
-                    plot_data(f, frame)
+                    pd_frame = reader(src_dir + f)
+                    plot_data(f, pd_frame)
+                    write_averages(avg_file_dir, pd_frame)
                 else:
                     print("All data files plotted.")
         except Exception as e:
             print(e)
-            print("Sleeping 120 seconds")
-            time.sleep(120)
+            print("Sleeping 300 seconds")
+            time.sleep(300)
 
 
 if __name__ == "__main__":
     src_directory = os.getcwd() + '/data/data_cellular/'
     print(src_directory)
-    plot_list(src_directory)
+    create_diagnostics(src_directory)
 
