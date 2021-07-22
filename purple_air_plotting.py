@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import pandas as pd
-
+import logging
 from datetime import datetime
 
 
@@ -34,6 +34,33 @@ To do:
 
 '''
 
+
+def log_file_setup():
+    '''
+    Setup/create the necessary directories and files for logging.
+
+    return param: log_file, the full path to the log file. 
+    return type: string
+    '''
+    
+    today = datetime.now().strftime('%d-%m-%Y') 
+    month = datetime.now().strftime('%m-%Y')
+    
+    working_dir = os.getcwd()
+    log_dir = working_dir + '/log/'
+    month_dir = '{}{}/'.format(log_dir, month)
+    log_file = '{}{}_log.txt'.format(month_dir, today)
+
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    if not os.path.exists(month_dir):
+        os.makedirs(month_dir)
+    
+
+    return log_file
+    
+
 def reader(path):
     '''
     Reads the csv as a pandas dataframe and returns it for plotting
@@ -45,6 +72,7 @@ def reader(path):
     output type: pandas dataframe
     '''
 
+    logging.info('Extracting {} as pandas datafile'.format(path))
     df = pd.read_csv(path, header=0)
 
     return df
@@ -65,21 +93,18 @@ def set_directory(file_name):
     mm = file_name[9:11]
     yy = file_name[13:17]
     
-    print('function', file_name)
-    print('function', dd, mm, yy)
-    
     # data_cellular will need to be changed for satellite
     avg_day_dir = '{}/data/data_cellular/{}-{}-{}/'.format(os.getcwd(), dd, mm, yy)
     plot_day_dir = '{}/plots/cellular/{}-{}-{}/'.format(os.getcwd(), dd, mm, yy)
-    
-    print('function', avg_day_dir)
-    print('function', plot_day_dir)
 
     if not os.path.exists(avg_day_dir):
         os.makedirs(avg_day_dir)
 
     if not os.path.exists(plot_day_dir):
         os.makedirs(plot_day_dir)
+    
+    logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
+    logging.info('Plots Saved to {}'.format(plot_day_dir))
 
     return avg_day_dir, plot_day_dir
         
@@ -91,11 +116,13 @@ def plot_data(file_name, frame, p_dir):
     input param: frame, pandas data frame containing all the data from csv file
     input type: pandas dataframe
     '''
-
+    
     prop = dict(boxstyle='round', facecolor='wheat', alpha=0.4)
     fig, ax = plt.subplots(2, sharex=True, figsize=(10,10))
     frame = frame.sort_values('Time', ascending=True)
-
+    plot_name = file_name[:-4]+'.png'
+    plot_path = p_dir + plot_name
+    logging.info('Plotting data from {}'.format(file_name))
 
     avg_pa_current = frame['PA Current'].mean(axis=0)
     avg_wifi_current = frame['WIFI Current'].mean(axis=0)
@@ -146,7 +173,8 @@ def plot_data(file_name, frame, p_dir):
                 transform=ax[1].transAxes, bbox=prop)
 
     plt.xticks(rotation=45)
-    plt.savefig(p_dir + file_name[:-4] + '.png', bbox_inches='tight', dpi=300)    
+    logging.info('Saving plot as {} to {}'.format(plot_name, plot_path))
+    plt.savefig(plot_path, bbox_inches='tight', dpi=300)    
     plt.close()
 
 
@@ -157,7 +185,12 @@ def write_averages(file_dir, frame):
 
     input param: frame, the dataframe of the csv file. 
     input type: pandas dataframe
+
+    input param: file_dir, file directory with csv data files
+    input type: string
     '''
+
+    logging.info('Writing .csv and .txt average files in {}'.format(file_dir))
 
     avg_pa_current = frame['PA Current'].mean(axis=0)
     avg_wifi_current = frame['WIFI Current'].mean(axis=0)
@@ -217,6 +250,8 @@ def write_averages(file_dir, frame):
                                 avg_total_current, avg_total_power))
                 txt.close()
     except Exception as e:
+        logging.error('WOMP WOMP')
+        logging.error('Error when recording average files: {}'.format(e))
         print('Womp womp')
         print(e)
     
@@ -232,39 +267,39 @@ def create_diagnostics(src_dir):
     input type: string
     '''
 
-    #plot_dir = os.getcwd() + '/plots/cellular/'
-    #avg_file_dir = os.getcwd() + '/data/'    
-
+    logging.info('Creating Diagnostic Plots and Files')
     for x in range(0, 2): #try 2 times  
         try: 
+            #loop through files in directory
             for f in os.listdir(src_dir):
                 
-                path = os.path.join(src_dir, f)
-                print(path)
+                #skip directories
+                path = os.path.join(src_dir, f)                
                 if os.path.isdir(path):
                     continue
              
                 plot_file = f[:-4] + '.png'
                 avg_dir, plot_dir = set_directory(f)
-                #print('Test', f, plot_file)
-                #print('Test', avg_dir, plot_dir)
-
+                
+                #search for plot of data file
                 if plot_file not in os.listdir(plot_dir):
                     
-                    #print(plot_file, os.listdir(plot_dir))
                     csv_file = src_dir + f
-                    #set_directory(f)
-
+                    
+                    #sometimes the rsync pulls in the csv before it is ready to plot and sometimes before it even has data in it, which throws and error. This just waits for the file to be big enough.
                     while os.path.getsize(csv_file) < 2000:
+                        log.warning('{} not begin enough, waiting'.format(csv_file))
                         print('File not big enough, waiting....')
-                        time.sleep(1)
+                        time.sleep(30)
 
                     print("Plotting data from {} as {}".format(f, plot_file))
                     pd_frame = reader(csv_file)
-                    #print(len(pd_frame['Time']))
 
-                    while len(pd_frame['Time']) != 600: #600 is the number of datapoints we get from a ten minute file
-                        time.sleep(1)
+                    # 600 is the number of datapoints we get from the ten minute file created by the cronjob on the raspberry pi
+                    while len(pd_frame['Time']) != 600:
+                        
+                        logging.warning('{} has only {} points. Waiting for 600 points...'.format(f, len(pd_frame['Time'])))
+                        time.sleep(30)
                         print(f, len(pd_frame['Time']))
                         pd_frame = reader(src_dir + f)
                     
@@ -272,14 +307,24 @@ def create_diagnostics(src_dir):
                     write_averages(avg_dir, pd_frame)
                 
                 else:
+                    logging.info('All data files plotted.')
                     print("All data files plotted.")
+
         except Exception as e:
             print(e)
-            #print("Sleeping 60 seconds")
-            #time.sleep(60)
+            logging.error('WOMP WOMP')
+            logging.error('Error encountered: e'.format(e))
 
 
 if __name__ == "__main__":
+    
+    log_file = log_file_setup()
+    logging.basicConfig(level=logging.INFO, filename=log_file, filemode='a', format='%(asctime)s - %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
+    logging.info('Logging to {}'.format(log_file))
+
+    mlogger = logging.getLogger('matplotlib')
+    mlogger.setLevel(logging.WARNING)
+
     src_directory = os.getcwd() + '/data/data_cellular/'
     print(src_directory)
     create_diagnostics(src_directory)
