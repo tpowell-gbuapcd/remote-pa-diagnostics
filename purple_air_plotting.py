@@ -43,7 +43,7 @@ def log_file_setup():
     return type: string
     '''
     
-    today = datetime.now().strftime('%d-%m-%Y') 
+    today = datetime.now().strftime('%m-%d-%Y') 
     month = datetime.now().strftime('%m-%Y')
     
     working_dir = os.getcwd()
@@ -74,6 +74,8 @@ def reader(path):
 
     logging.info('Extracting {} as pandas datafile'.format(path))
     df = pd.read_csv(path, header=0)
+    df['start'] = path[-18:-3]
+    print('Start time ', path[-18:-3])
 
     return df
 
@@ -94,8 +96,8 @@ def set_directory(file_name):
     yy = file_name[13:17]
     
     # data_cellular will need to be changed for satellite
-    avg_day_dir = '{}/data/data_cellular/{}-{}-{}/'.format(os.getcwd(), dd, mm, yy)
-    plot_day_dir = '{}/plots/cellular/{}-{}-{}/'.format(os.getcwd(), dd, mm, yy)
+    avg_day_dir = '{}/data/data_cellular/{}-{}-{}/'.format(os.getcwd(), mm, dd, yy)
+    plot_day_dir = '{}/plots/cellular/{}-{}-{}/'.format(os.getcwd(), mm, dd, yy)
 
     if not os.path.exists(avg_day_dir):
         os.makedirs(avg_day_dir)
@@ -103,8 +105,8 @@ def set_directory(file_name):
     if not os.path.exists(plot_day_dir):
         os.makedirs(plot_day_dir)
     
-    logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
-    logging.info('Plots Saved to {}'.format(plot_day_dir))
+    #logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
+    #logging.info('Plots Saved to {}'.format(plot_day_dir))
 
     return avg_day_dir, plot_day_dir
         
@@ -211,9 +213,18 @@ def write_averages(file_dir, frame):
     total_power = frame['PA Power'] + frame['WIFI Power'] + frame['RPi Power'] + frame['Comms Power']
     avg_total_current = total_current.mean(axis=0)
     avg_total_power = total_power.mean(axis=0)
+    
+    day = frame['start'][0][2:4]
+    month = frame['start'][0][0:2]
+    year = frame['start'][0][4:8]
+    hour= frame['start'][0][8:10]
+    minute = frame['start'][0][10:12]
+    second = frame['start'][0][12:14]
+    start_time = '{}/{}/{} {}:{}:{}'.format(month, day, year, hour, minute, second)
+    print(start_time)
 
     header_vals = ['Time', 'PA Current', 'WIFI Current', 'RPi Current', 'Comms Current', 'PA Power', 'WIFI Power', 'RPi Power', 'Comms Power', 'PA Voltage', 'WIFI Voltage', 'RPi Voltage', 'Comms Voltage', 'Total Current', 'Total Power']
-    row = [datetime.now().strftime('%m/%d/%Y %H:%M:%S'), avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, 
+    row = [start_time, avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, 
             avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage, avg_total_current, avg_total_power]
 
     csv_file = 'cellular_average_data.csv'
@@ -232,20 +243,31 @@ def write_averages(file_dir, frame):
                 #print('Writing Text Header')
                 txt.write('{:<25}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}\n'.format('Time', 'PA Current', 'WIFI Current', 'RPi Current', 'Comms Current',
                             'PA Power', 'WIFI Power', 'RPi Power', 'Comms Power', 'PA Voltage', 'WIFI Voltage', 'RPi Voltage', 'Comms Voltage', 'Total Current', 'Total Power'))
-                txt.write('{:<25}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}\n'.format(datetime.now().strftime('%m/%d/%Y %H:%M:%S'), 
+                txt.write('{:<25}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}\n'.format(start_time, 
                             avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage,
                                 avg_total_current, avg_total_power))
 
                 txt.close()
         else:
             with open(file_dir+csv_file, 'a') as f:
-                #print('Appending to CSV')
+                print('Appending to CSV')
+                day = frame['start'][0][2:4]
+                month = frame['start'][0][0:2]
+                year = frame['start'][0][4:8]
+                hour = frame['start'][0][8:10]
+                minute = frame['start'][0][10:12]
+                second = frame['start'][0][12:14]
+               
+                print(day, month, year, hour, minute, second)
+                start_time = '{}/{}/{} {}:{}:{}'.format(month, day, year, hour, minute, second)
+                print(start_time)
+                
                 file_writer = csv.writer(f, delimiter=',')
                 file_writer.writerow(row)
                 f.close()
             with open(file_dir+txt_file, 'a') as txt:
-                #print('Appending to Text')
-                txt.write('{:<25}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}\n'.format(datetime.now().strftime('%m/%d/%Y %H:%M:%S'), 
+                print('Appending to Text')
+                txt.write('{:<25}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}{:<15.2f}\n'.format(start_time, 
                             avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage,
                                 avg_total_current, avg_total_power))
                 txt.close()
@@ -288,7 +310,7 @@ def create_diagnostics(src_dir):
                     
                     #sometimes the rsync pulls in the csv before it is ready to plot and sometimes before it even has data in it, which throws and error. This just waits for the file to be big enough.
                     while os.path.getsize(csv_file) < 2000:
-                        log.warning('{} not begin enough, waiting'.format(csv_file))
+                        logging.warning('{} not begin enough, waiting'.format(csv_file))
                         print('File not big enough, waiting....')
                         time.sleep(30)
 
@@ -307,13 +329,13 @@ def create_diagnostics(src_dir):
                     write_averages(avg_dir, pd_frame)
                 
                 else:
-                    logging.info('All data files plotted.')
+                    #logging.info('All data files plotted.')
                     print("All data files plotted.")
 
         except Exception as e:
             print(e)
             logging.error('WOMP WOMP')
-            logging.error('Error encountered: e'.format(e))
+            logging.error('Error encountered: {}'.format(e))
 
 
 if __name__ == "__main__":
