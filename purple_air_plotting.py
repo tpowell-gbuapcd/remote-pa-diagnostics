@@ -94,7 +94,7 @@ def set_directory(file_name):
     dd = file_name[11:13]
     mm = file_name[9:11]
     yy = file_name[13:17]
-    
+    print('File Name: ', file_name)
     # data_cellular will need to be changed for satellite
     avg_day_dir = '{}/data/data_cellular/{}-{}-{}/'.format(os.getcwd(), mm, dd, yy)
     plot_day_dir = '{}/plots/cellular/{}-{}-{}/'.format(os.getcwd(), mm, dd, yy)
@@ -105,8 +105,8 @@ def set_directory(file_name):
     if not os.path.exists(plot_day_dir):
         os.makedirs(plot_day_dir)
     
-    #logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
-    #logging.info('Plots Saved to {}'.format(plot_day_dir))
+    logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
+    logging.info('Plots Saved to {}'.format(plot_day_dir))
 
     return avg_day_dir, plot_day_dir
         
@@ -293,16 +293,25 @@ def create_diagnostics(src_dir):
     for x in range(0, 2): #try 2 times  
         try: 
             #loop through files in directory
-            for f in os.listdir(src_dir):
-                
+            #print(sorted(os.listdir(src_dir))
+            
+            #sort the directory beforehand so that the average text and csv files are in chronological order 
+            for f in sorted(os.listdir(src_dir)):
+                      
                 #skip directories
                 path = os.path.join(src_dir, f)                
                 if os.path.isdir(path):
                     continue
-             
+
+                #skip temporary files             
+                if len(f) > 27:
+                    logging.warning('File: ', f)
+                    logging.warning('Skipping temperorary file')
+                    continue
+
                 plot_file = f[:-4] + '.png'
                 avg_dir, plot_dir = set_directory(f)
-                
+                 
                 #search for plot of data file
                 if plot_file not in os.listdir(plot_dir):
                     
@@ -331,7 +340,7 @@ def create_diagnostics(src_dir):
                 else:
                     #logging.info('All data files plotted.')
                     print("All data files plotted.")
-
+                
         except Exception as e:
             print(e)
             logging.error('WOMP WOMP')
@@ -349,5 +358,18 @@ if __name__ == "__main__":
 
     src_directory = os.getcwd() + '/data/data_cellular/'
     print(src_directory)
+    # for f in sorted(os.listdir(src_directory)):
+    #     print(f)
+    '''
+    for f in sorted(os.listdir(src_directory)):
+        day = f[11:13]
+        month = f[9:11]
+        year = f[13:17]
+        hour = f[17:19]
+        minute = f[19:21]
+        second = f[21:23]
+        print(month, day, year, hour, minute, second)
+    #print(sorted(os.listdir(src_directory)))
+    '''
     create_diagnostics(src_directory)
 
