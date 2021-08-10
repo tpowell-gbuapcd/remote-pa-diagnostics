@@ -72,7 +72,7 @@ def reader(path):
     output type: pandas dataframe
     '''
 
-    logging.info('Extracting {} as pandas datafile'.format(path))
+    #logging.info('Extracting {} as pandas datafile'.format(path))
     df = pd.read_csv(path, header=0)
     df['start'] = path[-18:-3]
     print('Start time ', path[-18:-3])
@@ -105,8 +105,8 @@ def set_directory(file_name):
     if not os.path.exists(plot_day_dir):
         os.makedirs(plot_day_dir)
     
-    logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
-    logging.info('Plots Saved to {}'.format(plot_day_dir))
+    #logging.info('Average Data Text Files Saved to {}'.format(avg_day_dir))
+    #logging.info('Plots Saved to {}'.format(plot_day_dir))
 
     return avg_day_dir, plot_day_dir
         
@@ -290,61 +290,61 @@ def create_diagnostics(src_dir):
     '''
 
     logging.info('Creating Diagnostic Plots and Files')
-    for x in range(0, 2): #try 2 times  
-        try: 
-            #loop through files in directory
-            #print(sorted(os.listdir(src_dir))
+    #for x in range(0, 2): #try 2 times  
+    try: 
+        #loop through files in directory
+        #print(sorted(os.listdir(src_dir))
+        
+        #sort the directory beforehand so that the average text and csv files are in chronological order 
+        for f in sorted(os.listdir(src_dir)):
+                  
+            #skip directories
+            path = os.path.join(src_dir, f)                
+            if os.path.isdir(path):
+                continue
+
+            #skip temporary files             
+            if len(f) > 27:
+                logging.warning('File: ', f)
+                logging.warning('Skipping temperorary file')
+                continue
+
+            plot_file = f[:-4] + '.png'
+            avg_dir, plot_dir = set_directory(f)
+             
+            #search for plot of data file
+            if plot_file not in os.listdir(plot_dir):
+                
+                csv_file = src_dir + f
+                
+                #sometimes the rsync pulls in the csv before it is ready to plot and sometimes before it even has data in it, which throws and error. This just waits for the file to be big enough.
+                while os.path.getsize(csv_file) < 2000:
+                    logging.warning('{} not begin enough, waiting'.format(csv_file))
+                    print('File not big enough, waiting....')
+                    time.sleep(30)
+
+                print("Plotting data from {} as {}".format(f, plot_file))
+                pd_frame = reader(csv_file)
+
+                # 600 is the number of datapoints we get from the ten minute file created by the cronjob on the raspberry pi
+                while len(pd_frame['Time']) != 600:
+                    
+                    logging.warning('{} has only {} points. Waiting for 600 points...'.format(f, len(pd_frame['Time'])))
+                    time.sleep(30)
+                    print(f, len(pd_frame['Time']))
+                    pd_frame = reader(src_dir + f)
+                
+                plot_data(f, pd_frame, plot_dir)
+                write_averages(avg_dir, pd_frame)
             
-            #sort the directory beforehand so that the average text and csv files are in chronological order 
-            for f in sorted(os.listdir(src_dir)):
-                      
-                #skip directories
-                path = os.path.join(src_dir, f)                
-                if os.path.isdir(path):
-                    continue
-
-                #skip temporary files             
-                if len(f) > 27:
-                    logging.warning('File: ', f)
-                    logging.warning('Skipping temperorary file')
-                    continue
-
-                plot_file = f[:-4] + '.png'
-                avg_dir, plot_dir = set_directory(f)
-                 
-                #search for plot of data file
-                if plot_file not in os.listdir(plot_dir):
-                    
-                    csv_file = src_dir + f
-                    
-                    #sometimes the rsync pulls in the csv before it is ready to plot and sometimes before it even has data in it, which throws and error. This just waits for the file to be big enough.
-                    while os.path.getsize(csv_file) < 2000:
-                        logging.warning('{} not begin enough, waiting'.format(csv_file))
-                        print('File not big enough, waiting....')
-                        time.sleep(30)
-
-                    print("Plotting data from {} as {}".format(f, plot_file))
-                    pd_frame = reader(csv_file)
-
-                    # 600 is the number of datapoints we get from the ten minute file created by the cronjob on the raspberry pi
-                    while len(pd_frame['Time']) != 600:
-                        
-                        logging.warning('{} has only {} points. Waiting for 600 points...'.format(f, len(pd_frame['Time'])))
-                        time.sleep(30)
-                        print(f, len(pd_frame['Time']))
-                        pd_frame = reader(src_dir + f)
-                    
-                    plot_data(f, pd_frame, plot_dir)
-                    write_averages(avg_dir, pd_frame)
-                
-                else:
-                    #logging.info('All data files plotted.')
-                    print("All data files plotted.")
-                
-        except Exception as e:
-            print(e)
-            logging.error('WOMP WOMP')
-            logging.error('Error encountered: {}'.format(e))
+            else:
+                #logging.info('All data files plotted.')
+                print("All data files plotted.")
+            
+    except Exception as e:
+        print(e)
+        logging.error('WOMP WOMP')
+        logging.error('Error encountered: {}'.format(e))
 
 
 if __name__ == "__main__":
