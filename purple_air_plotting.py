@@ -167,7 +167,7 @@ def plot_data(file_name, plat, frame, p_dir):
     ax[0].set_title('Remote PurpleAir Current and Power Diagnostics') #eventually have the code differentiate between different units    
     ax[0].legend(loc='upper left')
     ax[0].xaxis.set_major_locator(plt.MaxNLocator(10))
-    ax[0].text(0.75, 0.74, 'Avg PA: {:.2f}mA\nAvg WiFi: {:.2f}ma\nAvg RPi: {:.2f}mA\nAvg Comms: {:.2f}mA\nAvg Total: {:.2f}mA'.format(avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_total_current),
+    ax[0].text(0.75, 0.74, 'Avg PA: {:.2f}mA\nAvg WiFi: {:.2f}mA\nAvg RPi: {:.2f}mA\nAvg Comms: {:.2f}mA\nAvg Total: {:.2f}mA'.format(avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_total_current),
                 transform=ax[0].transAxes, bbox=prop)
 
     ax[1].plot(frame['Time'], frame['PA Power'], label='Purple Air', c='m')
