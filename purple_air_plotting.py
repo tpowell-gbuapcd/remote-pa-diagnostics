@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import pandas as pd
 import logging
+import argparse
+
 from datetime import datetime
 
 
@@ -35,7 +37,7 @@ To do:
 '''
 
 
-def log_file_setup():
+def log_file_setup(plat):
     '''
     Setup/create the necessary directories and files for logging.
 
@@ -47,7 +49,7 @@ def log_file_setup():
     month = datetime.now().strftime('%m-%Y')
     
     working_dir = os.getcwd()
-    log_dir = working_dir + '/log/'
+    log_dir = working_dir + '/log/' + plat + '/'
     month_dir = '{}{}/'.format(log_dir, month)
     log_file = '{}{}_log.txt'.format(month_dir, today)
 
@@ -80,7 +82,7 @@ def reader(path):
     return df
 
 
-def set_directory(file_name):
+def set_directory(file_name, plat):
     '''
     Set the save directory of plot and text/csv files. Directories are broken up by day.
     
@@ -91,13 +93,13 @@ def set_directory(file_name):
     return param: plot_day_dir, directory for plots with name of the format dd-mm-yyy.
     '''
 
-    dd = file_name[11:13]
-    mm = file_name[9:11]
-    yy = file_name[13:17]
+    dd = file_name[12:14]
+    mm = file_name[10:12]
+    yy = file_name[14:18]
     print('File Name: ', file_name)
     # data_cellular will need to be changed for satellite
-    avg_day_dir = '{}/data/data_cellular/{}-{}-{}/'.format(os.getcwd(), mm, dd, yy)
-    plot_day_dir = '{}/plots/cellular/{}-{}-{}/'.format(os.getcwd(), mm, dd, yy)
+    avg_day_dir = '{}/data/{}/{}-{}-{}/'.format(os.getcwd(), plat, mm, dd, yy)
+    plot_day_dir = '{}/plots/{}/{}-{}-{}/'.format(os.getcwd(), plat, mm, dd, yy)
 
     if not os.path.exists(avg_day_dir):
         os.makedirs(avg_day_dir)
@@ -111,12 +113,21 @@ def set_directory(file_name):
     return avg_day_dir, plot_day_dir
         
 
-def plot_data(file_name, frame, p_dir):
+def plot_data(file_name, plat, frame, p_dir):
     '''
     Plot the data from the file
     
+    input param: file_name, the csv file name, used to keep the same file name between plot and csv file
+    input type: string
+
+    input param: plat, platform we are running the cronjob on
+    input type: string
+
     input param: frame, pandas data frame containing all the data from csv file
     input type: pandas dataframe
+
+    input param: p_dir, the plot directory
+    input type: string    
     '''
     
     prop = dict(boxstyle='round', facecolor='wheat', alpha=0.4)
@@ -180,13 +191,16 @@ def plot_data(file_name, frame, p_dir):
     plt.close()
 
 
-def write_averages(file_dir, frame):
+def write_averages(file_dir, plat, frame):
     '''
     Write the ten minute averages of the csv data to a a csv and a human readable text file. Can be used later 
     for plotting or further data analysis. 
 
     input param: frame, the dataframe of the csv file. 
     input type: pandas dataframe
+    
+    input param: plat, platform we are running the cronjob on
+    input type: string
 
     input param: file_dir, file directory with csv data files
     input type: string
@@ -227,8 +241,8 @@ def write_averages(file_dir, frame):
     row = [start_time, avg_pa_current, avg_wifi_current, avg_rpi_current, avg_comms_current, avg_pa_power, avg_wifi_power, avg_rpi_power, avg_comms_power, 
             avg_pa_voltage, avg_wifi_voltage, avg_rpi_voltage, avg_comms_voltage, avg_total_current, avg_total_power]
 
-    csv_file = 'cellular_average_data.csv'
-    txt_file = 'cellular_average_data.txt'
+    csv_file = plat + '_average_data.csv'
+    txt_file = plat + '_average_data.txt'
 
     try:
         if csv_file not in os.listdir(file_dir):
@@ -278,18 +292,23 @@ def write_averages(file_dir, frame):
         print(e)
     
 
-def create_diagnostics(src_dir):
+def create_diagnostics(src_dir, plat):
     '''
     Check to see what csv files already have been plotted, make plots if they haven't. 
     Append average values to a csv. Sometimes the rsync starts before data have been fully
     inserted into file, which gives us incomplete data and an error. If this happens, we wait
-    5 minutes at (twice at most) to give the program time to completely fill the csv with data. 
+    to give the program time to completely fill the csv with data. 
     
     input param: src_dir, source directory of csv files
+    input type: string
+
+    input param: plat, platform we are running the cronjob on
     input type: string
     '''
 
     logging.info('Creating Diagnostic Plots and Files')
+    print(src_dir, plat)
+
     #for x in range(0, 2): #try 2 times  
     try: 
         #loop through files in directory
@@ -297,20 +316,25 @@ def create_diagnostics(src_dir):
         
         #sort the directory beforehand so that the average text and csv files are in chronological order 
         for f in sorted(os.listdir(src_dir)):
-                  
+        
+            print(f)
+
             #skip directories
             path = os.path.join(src_dir, f)                
             if os.path.isdir(path):
                 continue
 
-            #skip temporary files             
-            if len(f) > 27:
-                logging.warning('File: ', f)
-                logging.warning('Skipping temperorary file')
+            #skip temporary files 
+            #the length here is determined by the extra characters that rsync adds to temporary files, the correct length of the file is 28 characters
+            if len(f) > 28:
+                print(len(f))
+                print('{} is a temporary file, skipping...'.format(f))
+                #logging.warning('File: ', f)
+                #logging.warning('Skipping temperorary file')
                 continue
 
             plot_file = f[:-4] + '.png'
-            avg_dir, plot_dir = set_directory(f)
+            avg_dir, plot_dir = set_directory(f, plat)
              
             #search for plot of data file
             if plot_file not in os.listdir(plot_dir):
@@ -334,8 +358,8 @@ def create_diagnostics(src_dir):
                     print(f, len(pd_frame['Time']))
                     pd_frame = reader(src_dir + f)
                 
-                plot_data(f, pd_frame, plot_dir)
-                write_averages(avg_dir, pd_frame)
+                plot_data(f, plat, pd_frame, plot_dir)
+                write_averages(avg_dir, plat, pd_frame)
             
             else:
                 #logging.info('All data files plotted.')
@@ -349,14 +373,20 @@ def create_diagnostics(src_dir):
 
 if __name__ == "__main__":
     
-    log_file = log_file_setup()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-p', '--platform', type=str, help='Platform name of the unit to run the diagnostic code on e.g. GBUAPCDPI1')
+    args = parser.parse_args()
+    
+    log_file = log_file_setup(args.platform)
     logging.basicConfig(level=logging.INFO, filename=log_file, filemode='a', format='%(asctime)s - %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
     logging.info('Logging to {}'.format(log_file))
 
     mlogger = logging.getLogger('matplotlib')
     mlogger.setLevel(logging.WARNING)
 
-    src_directory = os.getcwd() + '/data/data_cellular/'
+    src_directory = os.getcwd() + '/data/' + args.platform + '/'
+
     print(src_directory)
     # for f in sorted(os.listdir(src_directory)):
     #     print(f)
@@ -371,5 +401,5 @@ if __name__ == "__main__":
         print(month, day, year, hour, minute, second)
     #print(sorted(os.listdir(src_directory)))
     '''
-    create_diagnostics(src_directory)
+    create_diagnostics(src_directory, args.platform)
 
