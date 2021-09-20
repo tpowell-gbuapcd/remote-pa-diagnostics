@@ -351,13 +351,19 @@ def create_diagnostics(src_dir, plat):
                 pd_frame = reader(csv_file)
 
                 # 600 is the number of datapoints we get from the ten minute file created by the cronjob on the raspberry pi
-                while len(pd_frame['Time']) != 600:
+                # files may be cut short due to power outages and whatnot, so we need to account for that error
+                # if we wait for more than 10 minutes, just take the average anyways
+                elapsed = 0
+                while len(pd_frame['Time']) != 600 and elapsed != 19:
                     
                     logging.warning('{} has only {} points. Waiting for 600 points...'.format(f, len(pd_frame['Time'])))
                     time.sleep(30)
                     print(f, len(pd_frame['Time']))
                     pd_frame = reader(src_dir + f)
+                    elapsed += 1
                 
+                if elapsed == 19:
+                    logging.info('{} never reached 10 minutes in length, short average'.format(f))
                 plot_data(f, plat, pd_frame, plot_dir)
                 write_averages(avg_dir, plat, pd_frame)
             
