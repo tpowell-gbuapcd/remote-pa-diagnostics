@@ -362,7 +362,7 @@ def create_diagnostics(src_dir, plat):
                     pd_frame = reader(src_dir + f)
                     elapsed += 1
                 
-                if elapsed == 19:
+                if elapsed == 20:
                     logging.info('{} never reached 10 minutes in length, short average'.format(f))
                 plot_data(f, plat, pd_frame, plot_dir)
                 write_averages(avg_dir, plat, pd_frame)
