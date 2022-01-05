@@ -76,8 +76,9 @@ def reader(path):
 
     #logging.info('Extracting {} as pandas datafile'.format(path))
     df = pd.read_csv(path, header=0)
-    df['start'] = path[-18:-3]
-    print('Start time ', path[-18:-3])
+    print(df)
+    #df['start'] = path[-18:-3]
+    #print('Start time ', path[-18:-3])
 
     return df
 
@@ -190,6 +191,74 @@ def plot_data(file_name, plat, frame, p_dir):
     plt.savefig(plot_path, bbox_inches='tight', dpi=300)    
     plt.close()
 
+def make_text_file(file_dir, plat, frame):
+
+    ''' 
+    This is using the already averaged data from the raspberry pi.
+    '''
+
+    header_vals = ['Time', 'PA Current', 'WIFI Current', 'RPi Current', 'Comms Current', 'Fans Current',
+                    'PA Power', 'WIFI Power', 'RPi Power', 'Comms Power', 'Fans Power',
+                    'PA Voltage', 'WIFI Voltage', 'RPi Voltage', 'Comms Voltage', 'Fans Voltage', 
+                    'Total Current', 'Total Power']
+    
+    day = frame['Time'][0][3:5]
+    month = frame['Time'][0][0:2]
+    year = frame['Time'][0][6:10]
+    hour= frame['Time'][0][11:13]
+    minute = frame['Time'][0][14:16]
+    second = frame['Time'][0][17:19]
+
+    #print(month, day, year, hour, minute, second)
+    start_t = '{}/{}/{} {}:{}:{}'.format(month, day, year, hour, minute, second)
+    #print('Start Time: ', start_t)
+    
+    total_current = frame['PA Current'] + frame['WIFI Current'] + frame['RPi Current'] + frame['Comms Current'] + frame['Fans Current']
+    total_power = frame['PA Power'] + frame['WIFI Power'] + frame['RPi Power'] + frame['Comms Power'] + frame['Comms Power']
+
+    row = [start_t, frame['PA Current'], frame['WIFI Current'], frame['RPi Current'], 
+            frame['Comms Current'], frame['Fans Current'], frame['PA Power'], frame['WIFI Power'],
+            frame['RPi Power'], frame['Comms Power'], frame['Fans Power'], frame['PA Voltage'],
+            frame['WIFI Voltage'], frame['RPi Voltage'], frame['Comms Voltage'], total_current, total_power, 
+            frame['Enclosure Temp'], frame['BME Temp'], frame['SCD Temp'], frame['BME Humidity'], frame['CO2 Humidity'], 
+            frame['BME Gas'],frame['CO2 Gas'], frame['BME Pressure'], frame['PM1.0 Env'],frame['PM2.5 Env'],
+            frame['PM10.0 Env'], frame['PM1.0 ST'], frame['PM2.5 ST'], frame['PM10.0 ST']]
+    
+    print(row)
+    txt_file = plat + '_average_data.txt'
+    print(txt_file, file_dir)
+    try:
+        if txt_file not in os.listdir(file_dir):
+            # if the file does not exist, create it and write the header row for and the first row
+            with open(file_dir+txt_file, 'w') as txt:
+                #print('Writing Text Header')
+                txt.write('{:<25}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}{:<20}\n'.format('Time', 'PA Current (mA)', 'WIFI Current (mA)', 'RPi Current (mA)', 'Comms Current (mA)', 'Fans Current', 'PA Power (W)', 'WIFI Power (W)', 'RPi Power(W)', 'Comms Power (W)', 'Fans Power (W)','PA Voltage (V)', 'WIFI Voltage (V)', 'RPi Voltage (V)', 'Comms Voltage (V)', 'Fans Voltage (V)', 'Total Current (mA)', 'Total Power (W)', 'Enclosure Temp (C)', 'BME Temp (C)', 'CO2 Temp (C)','BME Humidity (%)', 'CO2 Humidity (%)', 'BME Gas (ohms)', 'CO2 Gas (PPM)', 'PM1.0 Env (PPM)', 'PM2.5 Env (PPM)', 'PM10.0 Env', 'PM1.0 ST (PPM)', 'PM2.5 ST (PPM)', 'PM10.0 ST (PPM)'))
+                txt.write('{:<25}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}\n'.format(start_t, 
+                    frame['PA Current'], frame['WIFI Current'], frame['RPi Current'], frame['Comms Current'], frame['Fans Current'], 
+                    frame['PA Power'], frame['WIFI Power'], frame['RPi Power'], frame['Comms Power'], frame['Fans Power'],
+                    frame['PA Voltage'], frame['WIFI Voltage'], frame['RPi Voltage'], frame['Comms Voltage'],
+                    total_current, total_power,frame['Enclosure Temp'], frame['BME Temp'], frame['SCD Temp'],
+                    frame['BME Humidity'], frame['CO2 Humidity'], frame['BME Gas'],frame['CO2 Gas'], frame['BME Pressure'], 
+                    frame['PM1.0 Env'],frame['PM2.5 Env'], frame['PM10.0 Env'], frame['PM1.0 ST'], frame['PM2.5 ST'], frame['PM10.0 ST']))
+
+                txt.close()
+        else:
+            with open(file_dir+txt_file, 'a') as txt:
+                print('Appending to Text')
+                txt.write('{:<25}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}{:<20.2f}\n'.format(start_t,
+                    frame['PA Current'], frame['WIFI Current'], frame['RPi Current'], frame['Comms Current'], frame['Fans Current'],
+                    frame['PA Power'], frame['WIFI Power'], frame['RPi Power'], frame['Comms Power'], frame['Fans Power'],
+                    frame['PA Voltage'], frame['WIFI Voltage'], frame['RPi Voltage'], frame['Comms Voltage'],
+                    total_current, total_power,frame['Enclosure Temp'], frame['BME Temp'], frame['SCD Temp'],
+                    frame['BME Humidity'], frame['CO2 Humidity'], frame['BME Gas'],frame['CO2 Gas'], frame['BME Pressure'],
+                    frame['PM1.0 Env'],frame['PM2.5 Env'], frame['PM10.0 Env'], frame['PM1.0 ST'], frame['PM2.5 ST'], frame['PM10.0 ST']))
+                txt.close()
+    except Exception as e:
+        logging.error('Uh OH')
+        logging.error('Error when recording average files: {}'.format(e))
+        print('UH OH')
+        print(e)
+
 
 def write_averages(file_dir, plat, frame):
     '''
@@ -290,8 +359,42 @@ def write_averages(file_dir, plat, frame):
         logging.error('Error when recording average files: {}'.format(e))
         print('Womp womp')
         print(e)
-    
+   
 
+def text_file(src_dir, plat):
+
+    print('Creating Diagnostic Plots and Files')
+    
+    print(src_dir, plat)
+
+    try:
+        #loop through files in directory
+        #print(sorted(os.listdir(src_dir))
+
+        #sort the directory beforehand so that the average text and csv files are in chronological order
+        for f in sorted(os.listdir(src_dir)):
+
+            #print(f)
+
+            #skip directories
+            path = os.path.join(src_dir, f)
+            if os.path.isdir(path):
+                #print(path)
+                continue
+        
+        avg_dir, plot_dir = set_directory(f, plat) 
+        pd_frame = reader(src_dir+f)
+        #print(pd_frame)
+        make_text_file(avg_dir, plat, pd_frame)
+        #print(avg_dir, plat, f)
+
+    except Exception as e:
+        print(e)
+        logging.error('WOMP WOMP')
+        logging.error('Error encountered: {}'.format(e))
+'''
+Parts of this function are no longer necessary now that the rsynced csv is averaged beforehand. 
+'''
 def create_diagnostics(src_dir, plat):
     '''
     Check to see what csv files already have been plotted, make plots if they haven't. 
@@ -407,5 +510,6 @@ if __name__ == "__main__":
         print(month, day, year, hour, minute, second)
     #print(sorted(os.listdir(src_directory)))
     '''
-    create_diagnostics(src_directory, args.platform)
+    text_file(src_directory, args.platform)    
+    #create_diagnostics(src_directory, args.platform)
 
