@@ -50,18 +50,18 @@ def get_file(date, plat):
 def get_date(arg):
     '''
     Return the date of the file that we're plotting/making the text file for. If no argument is given, then the 
-    date we want to plot is the previous day. If an argument is given, then we simply return the argument.
+    date we want is the current day. If an argument is given, then we simply return the argument.
 
     input param: arg, the date that is passed as an argument to the script running in the crontab
     input type: string
     '''  
 
     if arg == None:
-        yesterday = (date.today() - timedelta(days=1)).strftime('%m-%d-%Y')
+        return_date = date.today().strftime('%m-%d-%Y') #yesterday = (date.today() - timedelta(days=1)).strftime('%m-%d-%Y')
     else:
-        yesterday = arg
+        return_date = arg
 
-    return yesterday
+    return return_date 
     
 
 def set_directory(directory, date, plat):
