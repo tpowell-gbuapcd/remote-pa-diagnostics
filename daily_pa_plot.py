@@ -11,8 +11,24 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import pandas as pd
 import argparse
+import logging
+
 from datetime import date, datetime, timedelta
 
+'''
+def log_file_setup(log_dir):
+    
+    Setup/create the necessary directories and files for logging
+
+    input param: log_dir, directory where the log file is saved. The same directory where the text file and plot are saved.
+    input type: string
+
+    output param: log_file, the full path to the log file
+    output type: string
+    
+    log_file = 'log.txt'
+'''    
+    
 
 def reader(file_path):
     '''
@@ -57,7 +73,7 @@ def get_date(arg):
     '''  
 
     if arg == None:
-        return_date = date.today().strftime('%m-%d-%Y') #yesterday = (date.today() - timedelta(days=1)).strftime('%m-%d-%Y')
+        return_date = date.today().strftime('%m-%d-%Y') 
     else:
         return_date = arg
 
@@ -150,6 +166,7 @@ def make_text(file_name, save_directory, frame):
 
     except Exception as e:
         print(e)
+        logging.error('Error Encountered: {}'.format(e), exc_info=True)
 
 
 def get_number_of_subplots(cols):
@@ -168,42 +185,45 @@ def get_number_of_subplots(cols):
     plot_count = 0
     counted_list = []
     
-    for val in cols:
-        print(val)
-        if 'PM' in val:
-            if 'PM' not in counted_list:
-                counted_list.append('PM')
-                plot_count += 1
-        if 'Temp' or 'RH' in val:
-            if 'Temp' not in counted_list:
-                counted_list.append('Temp')
-                plot_count += 1
-            if 'RH' not in counted_list:
-                counted_list.append('RH')
-        if 'Current' in val:
-            if 'Current' not in counted_list:
-                counted_list.append('Current')
-                plot_count += 1
-        if 'Voltage' in val:
-            if 'Voltage' not in counted_list:
-                counted_list.append('Voltage')
-                plot_count += 1
-        if 'Power' in val:
-            if 'Power' not in counted_list:
-                counted_list.append('Power')
-                plot_count += 1
-        if 'Pressure' in val:
-            if 'Pressure' not in counted_list:
-                counted_list.append('Pressure')
-                plot_count += 1
-        if 'Gas' or 'CO2' in val:
-            if 'Gas' not in counted_list:
-                counted_list.append('Gas')
-                plot_count += 1
-            if 'CO2' not in counted_list:
-                counted_list.append('CO2')
+    try:    
+        for val in cols:
+            print(val)
+            if 'PM' in val:
+                if 'PM' not in counted_list:
+                    counted_list.append('PM')
+                    plot_count += 1
+            if 'Temp' or 'RH' in val:
+                if 'Temp' not in counted_list:
+                    counted_list.append('Temp')
+                    plot_count += 1
+                if 'RH' not in counted_list:
+                    counted_list.append('RH')
+            if 'Current' in val:
+                if 'Current' not in counted_list:
+                    counted_list.append('Current')
+                    plot_count += 1
+            if 'Voltage' in val:
+                if 'Voltage' not in counted_list:
+                    counted_list.append('Voltage')
+                    plot_count += 1
+            if 'Power' in val:
+                if 'Power' not in counted_list:
+                    counted_list.append('Power')
+                    plot_count += 1
+            if 'Pressure' in val:
+                if 'Pressure' not in counted_list:
+                    counted_list.append('Pressure')
+                    plot_count += 1
+            if 'Gas' or 'CO2' in val:
+                if 'Gas' not in counted_list:
+                    counted_list.append('Gas')
+                    plot_count += 1
+                if 'CO2' not in counted_list:
+                    counted_list.append('CO2')
     
-    #print(plot_count, counted_list)
+    except Exception as e:
+        print(e)
+        logging.error('Error Encounted: {}'.format(e), exc_info=True)
 
     return plot_count  
 
@@ -255,90 +275,96 @@ def plot_data(frame, save_directory, plat, file_name, date):
     # make sure the frames are in ascending order according to Time
     # this can be hard coded since we will alwasy have a Time frame and it will always be called Time
     frame = frame.sort_values('Time', ascending=True)
+    try:
+        for val in list(frame.columns):
+            if 'Current' in val:
+                ax[0].plot(frame['Time'], frame[val], label=val)
+            if 'Power' in val:
+                ax[1].plot(frame['Time'], frame[val], label=val)
+            if 'Voltage' in val:
+                ax[2].plot(frame['Time'], frame[val], label=val)  
+            if 'Temp' or 'RH' in val:
+                if 'Temp' in val: 
+                    lg, = ax[3].plot(frame['Time'], frame[val], label=val, c=hot_colors[h_i])
+                    temp_rh_handles.append(lg)
+                    h_i += 1
+                if 'RH' in val:
+                    lg, = ax3_share.plot(frame['Time'], frame[val], label=val, c=cold_colors[c_i])
+                    temp_rh_handles.append(lg)
+                    c_i += 1
+            if 'Pressure' in val:
+                ax[4].plot(frame['Time'], frame[val], label=val)
+            if 'PM' in val:
+                ax[5].plot(frame['Time'], frame[val], label=val)
+            if 'Gas' or 'CO2' in val:
+                if 'Gas' in val:
+                    lg, = ax[6].plot(frame['Time'], frame[val], label=val, c='r')
+                    gas_handles.append(lg)
+                if 'CO2' in val:
+                    lg, = ax6_share.plot(frame['Time'], frame[val], label=val, c='b')
+                    gas_handles.append(lg)
+                   
 
-    for val in list(frame.columns):
-        if 'Current' in val:
-            ax[0].plot(frame['Time'], frame[val], label=val)
-        if 'Power' in val:
-            ax[1].plot(frame['Time'], frame[val], label=val)
-        if 'Voltage' in val:
-            ax[2].plot(frame['Time'], frame[val], label=val)  
-        if 'Temp' or 'RH' in val:
-            if 'Temp' in val: 
-                lg, = ax[3].plot(frame['Time'], frame[val], label=val, c=hot_colors[h_i])
-                temp_rh_handles.append(lg)
-                h_i += 1
-            if 'RH' in val:
-                lg, = ax3_share.plot(frame['Time'], frame[val], label=val, c=cold_colors[c_i])
-                temp_rh_handles.append(lg)
-                c_i += 1
-        if 'Pressure' in val:
-            ax[4].plot(frame['Time'], frame[val], label=val)
-        if 'PM' in val:
-            ax[5].plot(frame['Time'], frame[val], label=val)
-        if 'Gas' or 'CO2' in val:
-            if 'Gas' in val:
-                lg, = ax[6].plot(frame['Time'], frame[val], label=val, c='r')
-                gas_handles.append(lg)
-            if 'CO2' in val:
-                lg, = ax6_share.plot(frame['Time'], frame[val], label=val, c='b')
-                gas_handles.append(lg)
-               
+        ax[0].set_ylim(0,500)
+        ax[0].set_ylabel('Current (mA)')
+        ax[0].grid(True)
+        ax[0].legend(loc='upper left', prop={'size':lg_size})
+        ax[0].xaxis.set_major_locator(plt.LinearLocator(12))
 
-    ax[0].set_ylim(0,500)
-    ax[0].set_ylabel('Current (mA)')
-    ax[0].grid(True)
-    ax[0].legend(loc='upper left', prop={'size':lg_size})
-    ax[0].xaxis.set_major_locator(plt.LinearLocator(12))
+        ax[1].set_ylim(0, 15)
+        ax[1].set_ylabel('Power (W)')
+        ax[1].grid(True)
+        ax[1].legend(loc='upper left', prop={'size':lg_size})
+        ax[0].xaxis.set_major_locator(plt.LinearLocator(12))
 
-    ax[1].set_ylim(0, 15)
-    ax[1].set_ylabel('Power (W)')
-    ax[1].grid(True)
-    ax[1].legend(loc='upper left', prop={'size':lg_size})
-    ax[0].xaxis.set_major_locator(plt.LinearLocator(12))
+        ax[2].set_ylim(0, 16)
+        ax[2].set_ylabel('Voltage (V)')
+        ax[2].grid(True)
+        ax[2].legend(loc='upper left', prop={'size':lg_size})
+        ax[2].xaxis.set_major_locator(plt.LinearLocator(12))
 
-    ax[2].set_ylim(0, 16)
-    ax[2].set_ylabel('Voltage (V)')
-    ax[2].grid(True)
-    ax[2].legend(loc='upper left', prop={'size':lg_size})
-    ax[2].xaxis.set_major_locator(plt.LinearLocator(12))
+        ax[4].set_ylim(0, 1000)
+        ax[4].set_ylabel('Pressure (hPa)')
+        ax[4].grid(True)
+        ax[4].legend(loc='upper left', prop={'size':lg_size})
+        ax[4].xaxis.set_major_locator(plt.LinearLocator(12))
+        
+        ax[5].set_ylim(bottom=0)
+        ax[5].set_ylabel('PM Conc (ug/m3)')
+        ax[5].grid(True)
+        ax[5].legend(loc='upper left', prop={'size':lg_size})
+        ax[5].xaxis.set_major_locator(plt.LinearLocator(12))
 
-    ax[4].set_ylim(0, 1000)
-    ax[4].set_ylabel('Pressure (hPa)')
-    ax[4].grid(True)
-    ax[4].legend(loc='upper left', prop={'size':lg_size})
-    ax[4].xaxis.set_major_locator(plt.LinearLocator(12))
-    
-    ax[5].set_ylim(bottom=0)
-    ax[5].set_ylabel('PM Conc (ug/m3)')
-    ax[5].grid(True)
-    ax[5].legend(loc='upper left', prop={'size':lg_size})
-    ax[5].xaxis.set_major_locator(plt.LinearLocator(12))
+        ax[3].set_ylim(-20, 80)
+        ax[6].set_ylim(bottom=0)
+        ax3_share.set_ylim(0, 100)
+        ax6_share.set_ylim(bottom=0)
 
-    ax[3].set_ylim(-20, 80)
-    ax[6].set_ylim(bottom=0)
-    ax3_share.set_ylim(0, 100)
-    ax6_share.set_ylim(bottom=0)
+        ax[3].set_ylabel('Temp (C)')
+        ax[6].set_ylabel('BME Gas (ohms)')
+        ax3_share.set_ylabel('RH (%)')
+        ax6_share.set_ylabel('CO2 CONC (PPM)')
+        
+        ax[3].grid(True)
+        ax[6].grid(True)
+        ax[3].legend(handles=temp_rh_handles, loc='upper right', prop={'size':lg_size})
+        ax[6].legend(handles=gas_handles, loc='upper right', prop={'size':lg_size})
+        
+        ax[6].set_xlim(frame['Time'].iloc[0], frame['Time'].iloc[-1])
+        ax[6].xaxis.set_major_locator(plt.LinearLocator(12))
 
-    ax[3].set_ylabel('Temp (C)')
-    ax[6].set_ylabel('BME Gas (ohms)')
-    ax3_share.set_ylabel('RH (%)')
-    ax6_share.set_ylabel('CO2 CONC (PPM)')
-    
-    ax[3].grid(True)
-    ax[6].grid(True)
-    ax[3].legend(handles=temp_rh_handles, loc='upper right', prop={'size':lg_size})
-    ax[6].legend(handles=gas_handles, loc='upper right', prop={'size':lg_size})
-    
-    ax[6].set_xlim(frame['Time'].iloc[0], frame['Time'].iloc[-1])
-    ax[6].xaxis.set_major_locator(plt.LinearLocator(12))
+        plt.xticks(rotation=35)
+        plot_name = save_directory + plot_file
+        print(plot_name)
+        fig.suptitle(plat + "Data From " + date)
+        plt.gcf().autofmt_xdate()
+        #plt.set_loglevel('ERROR')
+        plt.tight_layout()
+        plt.savefig(plot_name, dpi=300)
+        plt.close()
 
-    plt.xticks(rotation=35)
-    plot_name = save_directory + plot_file
-    print(plot_name)
-    fig.suptitle(plat + "Data From " + date)
-    plt.gcf().autofmt_xdate()
-    plt.tight_layout()
-    plt.savefig(plot_name, dpi=300)
-    plt.close()
+    except Exception as e:
+        print(e)
+        logging.error('Error Encountered: {}'.format(e), exc_info=True)
+
 
