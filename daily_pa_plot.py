@@ -281,7 +281,11 @@ def plot_data(frame, save_directory, plat, file_name, date):
             if 'Pressure' in val:
                 ax[4].plot(frame['Time'], frame[val], label=val)
             if 'PM' in val:
-                ax[5].plot(frame['Time'], frame[val], label=val)
+                # skip standard temp/pressure readings. Still available in the text and csv file
+                if 'ST' in val:
+                    next
+                else:
+                    ax[5].plot(frame['Time'], frame[val], label=val)
             if 'Gas' or 'CO2' in val:
                 if 'Gas' in val:
                     lg, = ax[6].plot(frame['Time'], frame[val], label=val, c='r')
