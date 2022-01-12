@@ -15,20 +15,6 @@ import logging
 
 from datetime import date, datetime, timedelta
 
-'''
-def log_file_setup(log_dir):
-    
-    Setup/create the necessary directories and files for logging
-
-    input param: log_dir, directory where the log file is saved. The same directory where the text file and plot are saved.
-    input type: string
-
-    output param: log_file, the full path to the log file
-    output type: string
-    
-    log_file = 'log.txt'
-'''    
-    
 
 def reader(file_path):
     '''
